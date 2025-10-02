@@ -16,8 +16,9 @@ public class HealthController {
     public ApiResponse<Map<String, Object>> getHealth() {
         Map<String, Object> healthData = new HashMap<>();
         healthData.put("service", "api-gateway");
-        healthData.put("status", "UP");
         healthData.put("version", "1.0.0");
+        healthData.put("status", "UP");
+        healthData.put("role", "Request routing and load balancing");
 
         return ApiResponse.success("API Gateway is healthy", healthData);
     }

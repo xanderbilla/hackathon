@@ -18,6 +18,7 @@ public class HealthController {
         healthData.put("service", "service-registry");
         healthData.put("status", "UP");
         healthData.put("version", "1.0.0");
+        healthData.put("role", "Eureka service discovery and registration");
 
         return ApiResponse.success("Service Registry is healthy", healthData);
     }
