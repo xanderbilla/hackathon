@@ -1,0 +1,914 @@
+{
+	"info": {
+		"_postman_id": "sustain-a-thon-auth-api-complete",
+		"name": "Sustain-A-Thon Auth API - Complete Test Suite",
+		"description": "Comprehensive Postman collection for testing JWT cookie-based authentication system with multi-database architecture. Includes automated tests for all endpoints with proper validation.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "1️⃣ Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Registration successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Registration successful\");",
+									"});",
+									"",
+									"pm.test(\"Response contains user data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('username');",
+									"    pm.expect(jsonData.data.username).to.eql('testuser1');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"password123\",\n  \"aadhaarNumber\": \"123456789012\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user with valid Aadhaar number from database"
+					},
+					"response": []
+				},
+				{
+					"name": "2️⃣ Login User (Sets Cookies)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Login successful with cookies\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Login successful\");",
+									"});",
+									"",
+									"pm.test(\"Tokens not in response body (security check)\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.accessToken).to.be.null;",
+									"    pm.expect(jsonData.data.refreshToken).to.be.null;",
+									"});",
+									"",
+									"pm.test(\"Cookies are set (check headers)\", function () {",
+									"    var setCookieHeader = pm.response.headers.get('Set-Cookie');",
+									"    if (setCookieHeader) {",
+									"        pm.expect(setCookieHeader).to.include('accessToken');",
+									"        pm.expect(setCookieHeader).to.include('refreshToken');",
+									"        pm.expect(setCookieHeader).to.include('HttpOnly');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser1\",\n  \"password\": \"password123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Login user - Sets JWT tokens as HttpOnly cookies (15min access, 1hr refresh)"
+					},
+					"response": []
+				},
+				{
+					"name": "3️⃣ Get User Profile (/me)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"User profile retrieved successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"});",
+									"",
+									"pm.test(\"Profile contains expected data structure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data).to.have.property('firyInfo');",
+									"    pm.expect(jsonData.data).to.have.property('bankDetails');",
+									"    pm.expect(jsonData.data.firyInfo).to.have.property('name');",
+									"    pm.expect(jsonData.data.bankDetails).to.have.property('accountHolderName');",
+									"});",
+									"",
+									"pm.test(\"Account holder name matches Aadhaar name\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.data.bankDetails.accountHolderName).to.eql(jsonData.data.firyInfo.name);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Get user profile with Firy Info (government data) and Bank Details. Requires authentication via cookies."
+					},
+					"response": []
+				},
+				{
+					"name": "4️⃣ Change Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Password changed successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Password changed successfully\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser1\",\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Change user password. Requires authentication via cookies."
+					},
+					"response": []
+				},
+				{
+					"name": "5️⃣ Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Token refreshed successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Token refreshed successfully\");",
+									"});",
+									"",
+									"pm.test(\"New access token cookie set\", function () {",
+									"    var setCookieHeader = pm.response.headers.get('Set-Cookie');",
+									"    if (setCookieHeader) {",
+									"        pm.expect(setCookieHeader).to.include('accessToken');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/refresh-token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh-token"
+							]
+						},
+						"description": "Refresh access token using refresh token from cookies. Returns new access token as cookie."
+					},
+					"response": []
+				},
+				{
+					"name": "6️⃣ Logout User (Clears Cookies)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Logout successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Logout successful\");",
+									"});",
+									"",
+									"pm.test(\"Cookies cleared (check Set-Cookie headers)\", function () {",
+									"    var setCookieHeader = pm.response.headers.get('Set-Cookie');",
+									"    if (setCookieHeader) {",
+									"        pm.expect(setCookieHeader).to.include('Max-Age=0');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Logout user - Clears JWT cookies and invalidates session"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints with JWT cookie-based system"
+		},
+		{
+			"name": "🚫 Security Tests",
+			"item": [
+				{
+					"name": "Access /me Without Authentication",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Unauthorized access denied\", function () {",
+									"    pm.response.to.have.status(401);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"User need to login first\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/me",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"me"
+							]
+						},
+						"description": "Test accessing protected endpoint without authentication - should return 401 'User need to login first'"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password Without Authentication",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Unauthorized password change denied\", function () {",
+									"    pm.response.to.have.status(401);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"User need to login first\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"testuser1\",\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newpassword456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Test change password without authentication - should return 401"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout Without Authentication",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Unauthorized logout denied\", function () {",
+									"    pm.response.to.have.status(401);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"User need to login first\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							]
+						},
+						"description": "Test logout without authentication - should return 401"
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Login Credentials",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid credentials rejected\", function () {",
+									"    pm.response.to.have.status(400);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"Invalid\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"nonexistentuser\",\n  \"password\": \"wrongpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							]
+						},
+						"description": "Should fail with invalid credentials"
+					},
+					"response": []
+				}
+			],
+			"description": "Test cases for security validation and unauthorized access"
+		},
+		{
+			"name": "🏥 Health Checks",
+			"item": [
+				{
+					"name": "API Gateway Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"API Gateway is healthy\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check API Gateway health and database connections"
+					},
+					"response": []
+				},
+				{
+					"name": "Auth Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Auth Service is healthy\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('UP');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"health"
+							]
+						},
+						"description": "Check Auth Service health"
+					},
+					"response": []
+				},
+				{
+					"name": "Users Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Users Service is healthy\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.data.service).to.eql(\"users-service\");",
+									"    pm.expect(jsonData.data.status).to.eql(\"UP\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"health"
+							]
+						},
+						"description": "Check Users Service health"
+					},
+					"response": []
+				},
+				{
+					"name": "Service Registry Health (Direct)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Service Registry is healthy\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8761/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8761",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Check Service Registry health directly"
+					},
+					"response": []
+				}
+			],
+			"description": "Health check endpoints for all microservices"
+		},
+		{
+			"name": "🏢 Users Service Tests",
+			"item": [
+				{
+					"name": "Users Service Welcome",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Users service welcome message\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Welcome to Users Service\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8083/users/",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8083",
+							"path": [
+								"users",
+								""
+							]
+						},
+						"description": "Direct call to Users Service welcome endpoint"
+					},
+					"response": []
+				},
+				{
+					"name": "Users Service Info",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Users service info retrieved\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.data.service).to.eql(\"users-service\");",
+									"    pm.expect(jsonData.data.port).to.eql(\"8083\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8083/users/info",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8083",
+							"path": [
+								"users",
+								"info"
+							]
+						},
+						"description": "Direct call to Users Service info endpoint"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests for the cleaned-up Users Service (health-only endpoints)"
+		},
+		{
+			"name": "🧪 Additional Test Cases",
+			"item": [
+				{
+					"name": "Register with Priya Patel",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Registration successful for Priya Patel\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Registration successful\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"priya.patel\",\n  \"password\": \"secure123\",\n  \"aadhaarNumber\": \"234567890123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register with second dummy user from database"
+					},
+					"response": []
+				},
+				{
+					"name": "Register with Amit Kumar",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Registration successful for Amit Kumar\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.true;",
+									"    pm.expect(jsonData.message).to.include(\"Registration successful\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"amit.kumar\",\n  \"password\": \"password789\",\n  \"aadhaarNumber\": \"345678901234\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register with third dummy user from database"
+					},
+					"response": []
+				},
+				{
+					"name": "Invalid Aadhaar Registration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Invalid Aadhaar registration rejected\", function () {",
+									"    pm.response.to.have.status(400);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.be.false;",
+									"    pm.expect(jsonData.message).to.include(\"Aadhaar number not found\");",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"invalid.user\",\n  \"password\": \"password123\",\n  \"aadhaarNumber\": \"999999999999\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test registration with invalid Aadhaar number - should fail"
+					},
+					"response": []
+				}
+			],
+			"description": "Additional test cases with different users and validation scenarios"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Pre-request script for collection-wide setup",
+					"console.log('🚀 Running Sustain-A-Thon Auth API Tests...');",
+					"",
+					"// Set dynamic timestamp for unique usernames if needed",
+					"pm.environment.set('timestamp', Date.now());"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test script that runs after every request",
+					"pm.test(\"⏱️ Response time is reasonable\", function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"pm.test(\"📄 Content-Type is JSON\", function () {",
+					"    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+					"});",
+					"",
+					"// Log response time and status for monitoring",
+					"console.log(`📊 ${pm.info.requestName}: ${pm.response.status} (${pm.response.responseTime}ms)`);"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string",
+			"description": "API Gateway URL - main entry point for all requests"
+		},
+		{
+			"key": "auth_direct_url",
+			"value": "http://localhost:8082",
+			"type": "string",
+			"description": "Auth Service Direct URL (bypassing gateway)"
+		},
+		{
+			"key": "users_direct_url",
+			"value": "http://localhost:8083",
+			"type": "string",
+			"description": "Users Service Direct URL (bypassing gateway)"
+		},
+		{
+			"key": "service_registry_url",
+			"value": "http://localhost:8761",
+			"type": "string",
+			"description": "Eureka Service Registry URL"
+		}
+	]
+}

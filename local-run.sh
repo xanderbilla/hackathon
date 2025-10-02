@@ -138,8 +138,94 @@ check_prerequisites() {
         log_warning "Docker not found. Docker commands will not be available."
     fi
     
-    # All prerequisites checked - MySQL dependency removed
-    log_info "All microservices configured to run without database dependencies"
+    # Check MySQL and databases
+    check_mysql_and_databases
+}
+
+# Function to check MySQL connection and database existence
+check_mysql_and_databases() {
+    # Get database credentials
+    local db_username=${DB_USERNAME:-xanderbilla}
+    local db_password=${DB_PASSWORD:-0b1001001@}
+    local db_host=${DB_HOST:-localhost}
+    local db_port=${DB_PORT:-3306}
+    
+    log_info "Checking MySQL connection..."
+    
+    # Test MySQL connection
+    if ! mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "SELECT 1;" &>/dev/null; then
+        log_error "Cannot connect to MySQL database"
+        log_error "Please ensure MySQL is running and credentials are correct"
+        log_info "Database config: host=$db_host, port=$db_port, user=$db_username"
+        exit 1
+    fi
+    
+    log_success "MySQL connection successful"
+    
+    # Check if databases exist
+    local required_dbs=("aadhaar_db" "bank_db" "local_user_db")
+    local missing_dbs=()
+    
+    for db in "${required_dbs[@]}"; do
+        if ! mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "USE $db;" &>/dev/null; then
+            missing_dbs+=("$db")
+        fi
+    done
+    
+    if [ ${#missing_dbs[@]} -gt 0 ]; then
+        log_warning "Missing databases: ${missing_dbs[*]}"
+        log_info "Initializing databases..."
+        initialize_databases
+    else
+        log_success "All required databases are available: ${required_dbs[*]}"
+        
+        # Verify data exists
+        local aadhaar_count=$(mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "USE aadhaar_db; SELECT COUNT(*) FROM aadhaar_users;" 2>/dev/null | tail -1)
+        local bank_count=$(mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "USE bank_db; SELECT COUNT(*) FROM bank_accounts;" 2>/dev/null | tail -1)
+        
+        if [ "$aadhaar_count" -gt 0 ] && [ "$bank_count" -gt 0 ]; then
+            log_info "✓ Databases contain data: $aadhaar_count Aadhaar users and $bank_count bank accounts"
+            log_info "✓ Local user database ready for authentication service"
+        else
+            log_warning "Databases exist but appear to be empty. Reinitializing..."
+            initialize_databases
+        fi
+    fi
+}
+
+# Function to initialize databases
+initialize_databases() {
+    log_header "Initializing Databases"
+    
+    # Get database credentials
+    local db_username=${DB_USERNAME:-xanderbilla}
+    local db_password=${DB_PASSWORD:-0b1001001@}
+    local db_host=${DB_HOST:-localhost}
+    local db_port=${DB_PORT:-3306}
+    
+    # Initialize databases using the main script
+    log_info "Creating databases and tables with dummy data..."
+    
+    if [ -f "init-databases.sql" ]; then
+        mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" < init-databases.sql 2>/dev/null
+        if [ $? -eq 0 ]; then
+            log_success "Databases initialized successfully"
+            log_info "✓ Created databases: aadhaar_db, bank_db, local_user_db"
+            
+            # Verify the data was inserted
+            local aadhaar_count=$(mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "USE aadhaar_db; SELECT COUNT(*) FROM aadhaar_users;" 2>/dev/null | tail -1)
+            local bank_count=$(mysql -h "$db_host" -P "$db_port" -u "$db_username" -p"$db_password" -e "USE bank_db; SELECT COUNT(*) FROM bank_accounts;" 2>/dev/null | tail -1)
+            
+            log_info "✓ Added dummy data: $aadhaar_count Aadhaar users and $bank_count bank accounts"
+            log_info "✓ Local user database ready for authentication service"
+        else
+            log_error "Failed to initialize databases"
+            return 1
+        fi
+    else
+        log_error "init-databases.sql file not found"
+        return 1
+    fi
 }
 
 # Function to build all services
@@ -366,6 +452,12 @@ start_single_service() {
 start_all() {
     log_header "Starting All Services"
     load_env
+    
+    # Initialize databases first
+    if ! initialize_databases; then
+        log_error "Database initialization failed. Cannot start services."
+        return 1
+    fi
     
     # Start services in order (service-registry first)
     for i in "${!SERVICES[@]}"; do

@@ -1,6 +1,6 @@
 package com.hackathon.auth.controller;
 
-import com.hackathon.auth.dto.ApiResponse;
+import com.hackathon.common.dto.ApiResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;

@@ -2,17 +2,15 @@ package com.hackathon.service_registry.controller;
 
 import com.hackathon.service_registry.dto.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/health")
 public class HealthController {
 
-    @GetMapping
+    @GetMapping("/health")
     public ApiResponse<Map<String, Object>> getHealth() {
         Map<String, Object> healthData = new HashMap<>();
         healthData.put("service", "service-registry");
