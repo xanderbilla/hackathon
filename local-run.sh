@@ -513,27 +513,57 @@ show_status() {
     done
     
     echo ""
-    log_info "Health check endpoints:"
-    for i in "${!SERVICES[@]}"; do
-        local service="${SERVICES[$i]}"
-        local port="${SERVICE_PORTS[$i]}"
-        if check_port $port; then
-            case $service in
-                "service-registry")
-                    echo "  $service: http://localhost:$port/api/v1/service/health"
-                    ;;
-                "api-gateway")
-                    echo "  $service: http://localhost:$port/health"
-                    ;;
-                "auth")
-                    echo "  $service: http://localhost:$port/api/v1/auth/health"
-                    ;;
-                "users")
-                    echo "  $service: http://localhost:$port/api/v1/users/health"
-                    ;;
-            esac
-        fi
-    done
+    if check_port 8080; then
+        log_info "Health check endpoints (via API Gateway - Port 8080):"
+        echo "  service-registry: http://localhost:8080/api/v1/service/health"
+        echo "  api-gateway: http://localhost:8080/health"
+        echo "  auth: http://localhost:8080/api/v1/auth/health"
+        echo "  users: http://localhost:8080/api/v1/users/health"
+        echo ""
+        log_info "Direct service endpoints (for debugging):"
+        for i in "${!SERVICES[@]}"; do
+            local service="${SERVICES[$i]}"
+            local port="${SERVICE_PORTS[$i]}"
+            if check_port $port; then
+                case $service in
+                    "service-registry")
+                        echo "  $service: http://localhost:$port/api/v1/service/health"
+                        ;;
+                    "api-gateway")
+                        echo "  $service: http://localhost:$port/health"
+                        ;;
+                    "auth")
+                        echo "  $service: http://localhost:$port/api/v1/auth/health"
+                        ;;
+                    "users")
+                        echo "  $service: http://localhost:$port/api/v1/users/health"
+                        ;;
+                esac
+            fi
+        done
+    else
+        log_warning "API Gateway (port 8080) is not running. Direct endpoints:"
+        for i in "${!SERVICES[@]}"; do
+            local service="${SERVICES[$i]}"
+            local port="${SERVICE_PORTS[$i]}"
+            if check_port $port; then
+                case $service in
+                    "service-registry")
+                        echo "  $service: http://localhost:$port/api/v1/service/health"
+                        ;;
+                    "api-gateway")
+                        echo "  $service: http://localhost:$port/health"
+                        ;;
+                    "auth")
+                        echo "  $service: http://localhost:$port/api/v1/auth/health"
+                        ;;
+                    "users")
+                        echo "  $service: http://localhost:$port/api/v1/users/health"
+                        ;;
+                esac
+            fi
+        done
+    fi
 }
 
 
@@ -730,13 +760,20 @@ quick_test() {
 
 # Function to perform comprehensive health check
 health_check() {
-    log_header "Health Check - Testing All Endpoints"
+    log_header "Health Check - Testing All Endpoints via API Gateway (Port 8080)"
     
     local failed_services=()
     local passed_count=0
     local total_count=0
     
-    echo -e "${BLUE}Testing all service health endpoints...${NC}"
+    # First check if API Gateway is running
+    if ! check_port 8080; then
+        log_error "API Gateway is not running on port 8080. Cannot perform health checks."
+        log_info "Please start services first: ./local-run.sh start"
+        return 1
+    fi
+    
+    echo -e "${BLUE}Testing all service health endpoints via API Gateway...${NC}"
     echo ""
     
     for i in "${!SERVICES[@]}"; do
@@ -745,19 +782,19 @@ health_check() {
         local url=""
         total_count=$((total_count + 1))
         
-        # Set correct health endpoint for each service
+        # Route all requests through API Gateway on port 8080
         case $service in
             "service-registry")
-                url="http://localhost:$port/api/v1/service/health"
+                url="http://localhost:8080/api/v1/service/health"
                 ;;
             "api-gateway")
-                url="http://localhost:$port/health"
+                url="http://localhost:8080/health"
                 ;;
             "auth")
-                url="http://localhost:$port/api/v1/auth/health"
+                url="http://localhost:8080/api/v1/auth/health"
                 ;;
             "users")
-                url="http://localhost:$port/api/v1/users/health"
+                url="http://localhost:8080/api/v1/users/health"
                 ;;
         esac
         
