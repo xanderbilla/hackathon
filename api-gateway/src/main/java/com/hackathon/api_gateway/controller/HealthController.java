@@ -1,6 +1,6 @@
 package com.hackathon.api_gateway.controller;
 
-import com.hackathon.api_gateway.dto.ApiResponse;
+import com.hackathon.common.dto.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
