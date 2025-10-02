@@ -39,38 +39,6 @@ This template provides a scalable microservices architecture perfect for hackath
                            └─────────────────┘
 ```
 
-## 📋 API Response Format
-
-All services follow a **consistent, standardized API response format** for better frontend integration:
-
-### ✅ Success Response
-```json
-{
-  "message": "Operation completed successfully",
-  "status": true,
-  "error": false,
-  "timestamp": "2025-10-02T12:30:45.123",
-  "data": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com"
-  }
-}
-```
-
-### ❌ Error Response
-```json
-{
-  "message": "Validation failed",
-  "status": false,
-  "error": true,
-  "timestamp": "2025-10-02T12:30:45.123",
-  "data": {
-    "suggestion": "Please provide a valid email address",
-  }
-}
-```
-
 ## 🚀 Quick Start (60 seconds setup!)
 
 ### Prerequisites
@@ -85,8 +53,9 @@ All services follow a **consistent, standardized API response format** for bette
 git clone https://github.com/xanderbilla/hackathon
 cd spring-microservices-template
 
-# 2. Copy environment file (optional - services work without database)
-cp .env.hackathon .env
+# 2. Copy and configure environment file (optional - services work without database)
+cp .env.example .env.hackathon
+# Edit .env.hackathon with your specific configuration if needed
 
 # 3. Start all services with one command!
 ./local-run.sh start
@@ -109,7 +78,6 @@ curl http://localhost:8082/api/v1/auth/health
 # Users Service
 curl http://localhost:8083/api/v1/users/health
 ```
-
 ## 🤝 Contributing
 
 This template is designed to be:
