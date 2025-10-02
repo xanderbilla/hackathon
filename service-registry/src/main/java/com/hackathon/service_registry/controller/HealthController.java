@@ -1,6 +1,6 @@
 package com.hackathon.service_registry.controller;
 
-import com.hackathon.service_registry.dto.ApiResponse;
+import com.hackathon.common.dto.ApiResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
